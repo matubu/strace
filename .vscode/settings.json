@@ -5,6 +5,8 @@
 		"unistd_x32.h": "c",
 		"unistd_64.h": "c",
 		"unistd_32.h": "c",
-		"user.h": "c"
+		"user.h": "c",
+		"elf.h": "c",
+		"errno.h": "c"
 	}
 }

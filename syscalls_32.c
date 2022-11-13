@@ -1,6 +1,6 @@
 #include "syscall.h"
 #include <asm/unistd_32.h>
-const syscall_t syscalls_32[] = {
+const syscall_info_t syscalls_32[] = {
 [__NR_accept4] = {"accept4", {ULong, Ptr, Ptr, ULong, None, None}, Long},
 [__NR_access] = {"access", {Ptr, ULong, None, None, None, None}, Long},
 [__NR_acct] = {"acct", {Ptr, None, None, None, None, None}, Long},

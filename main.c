@@ -1,3 +1,4 @@
+#include "errors.h"
 #include "syscall.h"
 
 void usage() {
@@ -16,54 +17,80 @@ void strace_exec(char **args) {
 		syserr("ptrace");
 	}
 
+	// kill(getpid(), SIGSTOP);
 	execvp(args[0], args);
 	syserr("execvp");
 }
 
-void print_syscall_pre(regs_t *regs) {
-	int syscall_id = regs->orig_rax;
-	reg_t args[6] = {
-		regs->rdi,
-		regs->rsi,
-		regs->rdx,
-		regs->r10,
-		regs->r8,
-		regs->r9,
-	};
-
-	const syscall_t *syscall = syscalls_64 + syscall_id;
-	if (syscall_id > (int)(sizeof(syscalls_64) / sizeof(*syscalls_64)) || syscall->name == NULL) {
-		printf("syscall %d(%lld, %lld, %lld, %lld, %lld, %lld)", syscall_id, args[0], args[1], args[2], args[3], args[4], args[5]);
-		return ;
-	}
-
-	printf("\x1b[94m%s\x1b[0m(", syscall->name);
+void print_syscall_pre(const syscall_data_t *data) {
+	printf("\x1b[94m%s\x1b[0m(", data->syscall_info->name);
 	for (int i = 0; i < 6; i++) {
-		if (syscall->arguments[i] == None) {
+		if (data->syscall_info->arguments[i] == None) {
 			break;
 		}
 		if (i) {
 			printf(", ");
 		}
-		print_reg_data(syscall->arguments[i], args[i], regs);
+		print_reg_data(data->syscall_info->arguments[i], data->args[i]);
 	}
 	printf(")");
 }
 
-void print_syscall_post(regs_t *regs) {
-	sreg_t ret = regs->rax;
+void print_syscall_post(const syscall_data_t *data) {
+	// TODO read return type (ptr, str, ulong, int, none)
+	printf(" = \x1b[93m" pi64 "\x1b[0m", data->sret);
+	if (data->sret < 0 && -data->sret < MAX_ERRNO) {
+		printf(" \x1b[90m%s\x1b[0m (\x1b[91m%s\x1b[0m)", error_map[-data->sret], strerror(-data->sret));
+	}
+	printf("\n");
+}
 
-	// TODO read return type
-	if (ret < 0) {
-		printf(" = \x1b[93m-1\x1b[0m \x1b[91merrno %lld\x1b[0m\n", -ret);
-	} else {
-		printf(" = \x1b[93m%lld\x1b[0m\n", ret);
+syscall_data_t get_syscall_data(struct iovec *iov) {
+	syscall_data_t data;
+
+	switch (iov->iov_len) {
+		case sizeof(regs32_t): {
+			regs32_t *regs32 = iov->iov_base;
+			data.arch = ARCH_32;
+			data.syscall_id = regs32->orig_eax;
+			data.syscall_info = syscalls_32 + data.syscall_id;
+			data.args[0] = regs32->ebx;
+			data.args[1] = regs32->ecx;
+			data.args[2] = regs32->edx;
+			data.args[3] = regs32->esi;
+			data.args[4] = regs32->edi;
+			data.args[5] = regs32->ebp;
+			data.ret = regs32->eax;
+			data.sret = (sreg32_t)regs32->eax;
+			return data;
+		}
+		case sizeof(regs64_t): {
+			regs64_t *regs64 = iov->iov_base;
+			data.arch = ARCH_64;
+			data.syscall_id = regs64->orig_rax;
+			data.syscall_info = syscalls_64 + data.syscall_id;
+			data.args[0] = regs64->rdi;
+			data.args[1] = regs64->rsi;
+			data.args[2] = regs64->rdx;
+			data.args[3] = regs64->r10;
+			data.args[4] = regs64->r8;
+			data.args[5] = regs64->r9;
+			data.ret = regs64->rax;
+			data.sret = regs64->rax;
+			return data;
+		}
+		default: {
+			syserr("get_syscall_data");
+			exit(1);
+		}
 	}
 }
 
 // Parent process
 void strace_trace(pid_t pid) {
-	// TODO sigprocmask
+	// TODO write strings for read and write
+	// TODO sigprocmask & handle signals
+	// ptrace(PTRACE_SETOPTIONS, pid, NULL, PTRACE_O_TRACESYSGOOD);
 
 	while (1) {
 		int status;
@@ -79,18 +106,25 @@ void strace_trace(pid_t pid) {
 
 		// Get the registers values
 		regs_t regs;
-		if (ptrace(PTRACE_GETREGS, pid, NULL, &regs) == -1) {
+		struct iovec iov = {
+			.iov_base = &regs,
+			.iov_len = sizeof(regs),
+		};
+		if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &iov) == -1) {
 			syserr("ptrace getregs");
 		}
 
-		// https://stackoverflow.com/questions/52056385/after-attaching-to-process-how-to-check-whether-the-tracee-is-in-a-syscall
-		if ((sreg_t)regs.rax == -ENOSYS) {
-			print_syscall_pre(&regs);
-		} else {
-			// Print the syscall name and arguments
-			print_syscall_post(&regs);
-		}
+		syscall_data_t data = get_syscall_data(&iov);
 
+		if (data.syscall_id < MAX_SYSCALLS && data.syscall_info->name != NULL) {
+			// https://stackoverflow.com/questions/52056385/after-attaching-to-process-how-to-check-whether-the-tracee-is-in-a-syscall
+			if (data.sret == -ENOSYS) {
+				print_syscall_pre(&data);
+			} else {
+				print_syscall_post(&data);
+			}
+			fflush(stdout);
+		}
 
 		// Continue until next syscall
 		if (ptrace(PTRACE_SYSCALL, pid, NULL, NULL) == -1) {

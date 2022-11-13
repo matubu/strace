@@ -1,6 +1,6 @@
 NAME = ft_strace
 
-SRCS = main.c syscall.c
+SRCS = main.c syscall.c errors.c
 OBJS = $(SRCS:.c=.o)
 
 CFLAGS = -Wall -Wextra -Werror -Ofast

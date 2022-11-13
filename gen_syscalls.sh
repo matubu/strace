@@ -11,7 +11,7 @@ cd linux
 
 echo "#include \"syscall.h\""
 echo "#include <asm/unistd_$1.h>"
-echo "const syscall_t syscalls_$1[] = {"
+echo "const syscall_info_t syscalls_$1[] = {"
 
 ag --multiline -ro --nobreak --nofilename '^SYSCALL_DEFINE\d\([^\)]+\)' \
 	| tr '\n)' ' \n' \
