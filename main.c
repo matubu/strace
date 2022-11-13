@@ -1,5 +1,4 @@
 #include "syscall.h"
-#include "syscall_64.h"
 
 void usage() {
 	printf("strace: must have PROG [ARGS]\n");
@@ -32,11 +31,11 @@ void print_syscall_pre(regs_t *regs) {
 		regs->r9,
 	};
 
-	if (syscall_id > (int)(sizeof(syscalls_64) / sizeof(*syscalls_64))) {
+	const syscall_t *syscall = syscalls_64 + syscall_id;
+	if (syscall_id > (int)(sizeof(syscalls_64) / sizeof(*syscalls_64)) || syscall->name == NULL) {
 		printf("syscall %d(%lld, %lld, %lld, %lld, %lld, %lld)", syscall_id, args[0], args[1], args[2], args[3], args[4], args[5]);
 		return ;
 	}
-	const syscall_t *syscall = syscalls_64 + syscall_id;
 
 	printf("\x1b[94m%s\x1b[0m(", syscall->name);
 	for (int i = 0; i < 6; i++) {

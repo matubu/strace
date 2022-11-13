@@ -2,7 +2,6 @@
 
 #include <sys/ptrace.h>
 #include <sys/wait.h>
-#include <sys/syscall.h>
 #include <sys/types.h>
 #include <sys/user.h>
 #include <stdlib.h>
@@ -40,3 +39,8 @@ typedef long long int						sreg_t;
 typedef struct user_regs_struct				regs_t;
 
 void print_reg_data(data_type_t type, reg_t reg, regs_t *regs);
+
+#define MAX_SYSCALLS 512
+
+extern const syscall_t syscalls_32[MAX_SYSCALLS];
+extern const syscall_t syscalls_64[MAX_SYSCALLS];
