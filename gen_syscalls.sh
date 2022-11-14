@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# TODO fix missing syscalls
+# TODO missing syscalls ?
 
 if [ ! -d linux ]; then
 	# Clone without history
@@ -19,9 +19,17 @@ ag --multiline -ro --nobreak --nofilename '^SYSCALL_DEFINE\d\([^\)]+\)' \
 	| sed 's/^\s//g' \
 	| cut -c 17- \
 	| awk -F, '
-	function replace(s) {
+	function replace(s, name) {
 		gsub(/const|__user/, "", s);
-		# gsub(/^\s*char\s+\*\s*$/, "String", s);
+		# if (!(name ~ /buf/)) {
+		# 	gsub(/^\s*char\s*\*\s*$/, "String", s);
+		# }
+		# if (name ~ /argv/) {
+		# 	gsub(/^\s*char\s*\*\s*\*\s*$/, "Argv", s);
+		# }
+		# if (name ~ /env/) {
+		# 	gsub(/^\s*char\s*\*\s*\*\s*$/, "Env", s);
+		# }
 		gsub(/.*\*/, "Ptr", s);
 		gsub(/_?_?u32|_?_?u64|size_t|.*unsigned.*/, "ULong", s);
 		gsub(/.*(_?_?s32|_?_?s64|int|ssize_t|long).*/, "ULong", s);
@@ -30,8 +38,10 @@ ag --multiline -ro --nobreak --nofilename '^SYSCALL_DEFINE\d\([^\)]+\)' \
 		return s;
 	}
 	{
-		for (i = 2; i <= 12; i += 2)
-			$i = $i ? replace($i) : "None"
+		for (i = 2; i <= 12; i += 2) {
+			j = i + 1;
+			$i = $i ? replace($i, $j) : "None"
+		}
 		if (system("grep -e \"\\s__NR_"$1"\\s\" /usr/include/asm/unistd_'$1'.h > /dev/null") == 0)
 			print "[__NR_"$1"] = {\""$1"\", {"$2", "$4", "$6", "$8", "$10", "$12"}, Long},"
 	}

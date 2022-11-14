@@ -19,10 +19,12 @@
 
 typedef enum {
 	None,
-	String,
+	// String,
 	Ptr,
 	ULong,
 	Long,
+	// Argv,
+	// Env,
 	// Buf,    // Use return value as buffer size
 	// String for write
 	// StringArray
@@ -32,7 +34,6 @@ typedef enum {
 	// ModeT,
 	// SigNum
 	// Struct ?
-	// Env
 }	data_type_t;
 
 typedef struct {

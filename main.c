@@ -88,7 +88,7 @@ syscall_data_t get_syscall_data(struct iovec *iov) {
 
 // Parent process
 void strace_trace(pid_t pid) {
-	// TODO write strings for read and write
+	// TODO write strings for read and write ?
 	// TODO sigprocmask & handle signals
 	// ptrace(PTRACE_SETOPTIONS, pid, NULL, PTRACE_O_TRACESYSGOOD);
 

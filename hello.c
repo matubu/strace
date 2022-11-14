@@ -3,9 +3,16 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-int main() {
+int main(int ac, char **av) {
+	if (av[0][0] == '\0') {
+		while (1) {
+			write(1, "test\n", 5);
+			sleep(1);
+		}
+		return 1;
+	}
 	int fd = open("hello.c", O_RDONLY);
-	printf("hello world %d\n", fd);
+	int fd2 = open("ergergergerg", O_RDONLY);
 	mmap(NULL, 0, 0, 0, fd, 0);
-	execve("/bin/ls", NULL, NULL);
+	execve(av[0], NULL, NULL);
 }
