@@ -1,6 +1,6 @@
-#include "errors.h"
+#include "errno_map.h"
 
-const char *error_map[MAX_ERRNO] = {
+const char *errno_map[MAX_ERRNO] = {
 	[1] = "EPERM",
 	[2] = "ENOENT",
 	[3] = "ESRCH",

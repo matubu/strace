@@ -123,5 +123,6 @@ void print_reg_data(data_type_t type, reg_t reg);
 
 #define MAX_SYSCALLS 512
 
+/* Auto generated using gen_syscalls.sh */
 extern const syscall_info_t syscalls_32[MAX_SYSCALLS];
 extern const syscall_info_t syscalls_64[MAX_SYSCALLS];

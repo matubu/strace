@@ -1,7 +1,7 @@
 NAME = ft_strace
 
-SRCS = main.c syscall.c errors.c
-OBJS = $(SRCS:%.c=objects/%.o)
+SRCS = $(wildcard *.c)
+OBJS = $(SRCS:%.c=objects/%.o) objects/syscalls_32.o objects/syscalls_64.o
 
 CFLAGS = -Wall -Wextra -Werror -Ofast
 
@@ -16,11 +16,11 @@ objects/%.o: %.c
 	mkdir -p objects
 	gcc $(CFLAGS) -c -o $@ $^
 
-$(NAME): syscalls_32.c syscalls_64.c $(OBJS)
+$(NAME): $(OBJS)
 	gcc $(CFLAGS) -o $@ $^
 
 clean:
-	rm -rf $(OBJS)
+	rm -rf objects
 
 fclean: clean
 	rm -rf $(NAME)

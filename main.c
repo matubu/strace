@@ -1,4 +1,4 @@
-#include "errors.h"
+#include "errno_map.h"
 #include "syscall.h"
 
 void usage() {
@@ -40,7 +40,7 @@ void print_syscall_post(const syscall_data_t *data) {
 	// TODO read return type (ptr, str, ulong, int, none)
 	printf(" = \x1b[93m" pi64 "\x1b[0m", data->sret);
 	if (data->sret < 0 && -data->sret < MAX_ERRNO) {
-		printf(" \x1b[90m%s\x1b[0m (\x1b[91m%s\x1b[0m)", error_map[-data->sret], strerror(-data->sret));
+		printf(" \x1b[90m%s\x1b[0m (\x1b[91m%s\x1b[0m)", errno_map[-data->sret], strerror(-data->sret));
 	}
 	printf("\n");
 }
