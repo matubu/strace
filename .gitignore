@@ -1,3 +1,4 @@
 linux
 ft_strace
-*.o
+objects
+.vscode

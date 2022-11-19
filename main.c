@@ -17,7 +17,7 @@ void strace_exec(char **args) {
 		syserr("ptrace");
 	}
 
-	// kill(getpid(), SIGSTOP);
+	kill(getpid(), SIGSTOP);
 	execvp(args[0], args);
 	syserr("execvp");
 }
@@ -90,6 +90,9 @@ syscall_data_t get_syscall_data(struct iovec *iov) {
 void strace_trace(pid_t pid) {
 	// TODO write strings for read and write ?
 	// TODO sigprocmask & handle signals
+	// TODO error message when invalid path and use PATH variable
+	// TODO option -c to count syscalls
+	// TODO fix double print and missing last syscall return value
 	// ptrace(PTRACE_SETOPTIONS, pid, NULL, PTRACE_O_TRACESYSGOOD);
 
 	while (1) {

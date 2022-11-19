@@ -1,7 +1,7 @@
 NAME = ft_strace
 
 SRCS = main.c syscall.c errors.c
-OBJS = $(SRCS:.c=.o)
+OBJS = $(SRCS:%.c=objects/%.o)
 
 CFLAGS = -Wall -Wextra -Werror -Ofast
 
@@ -12,7 +12,8 @@ syscalls_32.c:
 syscalls_64.c:
 	./gen_syscalls.sh 64 > syscalls_64.c
 
-%.o: %.c
+objects/%.o: %.c
+	mkdir -p objects
 	gcc $(CFLAGS) -c -o $@ $^
 
 $(NAME): syscalls_32.c syscalls_64.c $(OBJS)
