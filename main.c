@@ -1,25 +1,19 @@
 #include "errno_map.h"
 #include "syscall.h"
+#include "utils.h"
 
 void usage() {
 	printf("strace: must have PROG [ARGS]\n");
 	exit(1);
 }
 
-void syserr(char *msg) {
-	perror(msg);
-	exit(1);
-}
-
 // Child process
-void strace_exec(char **args) {
+void setup_tracee() {
 	if (ptrace(PTRACE_TRACEME, 0, NULL, NULL)) {
 		syserr("ptrace");
 	}
 
 	kill(getpid(), SIGSTOP);
-	execvp(args[0], args);
-	syserr("execvp");
 }
 
 void print_syscall_pre(const syscall_data_t *data) {
@@ -141,6 +135,11 @@ int main(int ac, char **av) {
 		usage();
 	}
 
+	char *path = find_path(av[1]);
+	if (access(path, X_OK) == -1) {
+		syserr("can't find program");
+	}
+
 	// Fork a child process
 	pid_t pid = fork();
 	if (pid == -1) {
@@ -148,7 +147,9 @@ int main(int ac, char **av) {
 	}
 
 	if (pid == 0) {
-		strace_exec(av + 1);
+		setup_tracee();
+		execvp(path, av + 1);
+		syserr("execvp");
 	}
 	else {
 		strace_trace(pid);
