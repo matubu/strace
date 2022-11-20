@@ -30,13 +30,37 @@ void print_syscall_pre(const syscall_data_t *data) {
 	printf(")");
 }
 
-void print_syscall_post(const syscall_data_t *data) {
-	// TODO read return type (ptr, str, ulong, int, none)
-	printf(" = \x1b[93m" pi64 "\x1b[0m", data->sret);
-	if (data->sret < 0 && -data->sret < MAX_ERRNO) {
-		printf(" \x1b[90m%s\x1b[0m (\x1b[91m%s\x1b[0m)", errno_map[-data->sret], strerror(-data->sret));
+void print_syscall_error(const syscall_data_t *data) {
+	if (data->syscall_info->return_type == Ptr) {
+		if (data->ret.s == -1 || data->ret.u == 0) {
+			printf(" \x1b[91mError\x1b[0m");
+		}
+		return ;
 	}
+	if (data->ret.s < 0) {
+		printf(" \x1b[90m%s\x1b[0m (\x1b[91m%s\x1b[0m)", errno_map[-data->ret.s], strerror(-data->ret.s));
+	}
+}
+
+void print_syscall_post(const syscall_data_t *data) {
+	printf(" = ");
+	print_reg_data(data->syscall_info->return_type, data->ret);
+	print_syscall_error(data);
 	printf("\n");
+}
+
+reg_t reg64_to_reg(reg64_t reg64) {
+	return (reg_t) {
+		.u = reg64,
+		.s = (sreg64_t)reg64,
+	};
+}
+
+reg_t reg32_to_reg(reg32_t reg32) {
+	return (reg_t) {
+		.u = reg32,
+		.s = (sreg32_t)reg32,
+	};
 }
 
 syscall_data_t get_syscall_data(struct iovec *iov) {
@@ -46,31 +70,29 @@ syscall_data_t get_syscall_data(struct iovec *iov) {
 		case sizeof(regs32_t): {
 			regs32_t *regs32 = iov->iov_base;
 			data.arch = ARCH_32;
-			data.syscall_id = regs32->orig_eax;
-			data.syscall_info = syscalls_32 + data.syscall_id;
-			data.args[0] = regs32->ebx;
-			data.args[1] = regs32->ecx;
-			data.args[2] = regs32->edx;
-			data.args[3] = regs32->esi;
-			data.args[4] = regs32->edi;
-			data.args[5] = regs32->ebp;
-			data.ret = regs32->eax;
-			data.sret = (sreg32_t)regs32->eax;
+			data.syscall_id = reg32_to_reg(regs32->orig_eax);
+			data.syscall_info = syscalls_32 + data.syscall_id.u;
+			data.args[0] = reg32_to_reg(regs32->ebx);
+			data.args[1] = reg32_to_reg(regs32->ecx);
+			data.args[2] = reg32_to_reg(regs32->edx);
+			data.args[3] = reg32_to_reg(regs32->esi);
+			data.args[4] = reg32_to_reg(regs32->edi);
+			data.args[5] = reg32_to_reg(regs32->ebp);
+			data.ret = reg32_to_reg(regs32->eax);
 			return data;
 		}
 		case sizeof(regs64_t): {
 			regs64_t *regs64 = iov->iov_base;
 			data.arch = ARCH_64;
-			data.syscall_id = regs64->orig_rax;
-			data.syscall_info = syscalls_64 + data.syscall_id;
-			data.args[0] = regs64->rdi;
-			data.args[1] = regs64->rsi;
-			data.args[2] = regs64->rdx;
-			data.args[3] = regs64->r10;
-			data.args[4] = regs64->r8;
-			data.args[5] = regs64->r9;
-			data.ret = regs64->rax;
-			data.sret = regs64->rax;
+			data.syscall_id = reg64_to_reg(regs64->orig_rax);
+			data.syscall_info = syscalls_64 + data.syscall_id.u;
+			data.args[0] = reg64_to_reg(regs64->rdi);
+			data.args[1] = reg64_to_reg(regs64->rsi);
+			data.args[2] = reg64_to_reg(regs64->rdx);
+			data.args[3] = reg64_to_reg(regs64->r10);
+			data.args[4] = reg64_to_reg(regs64->r8);
+			data.args[5] = reg64_to_reg(regs64->r9);
+			data.ret = reg64_to_reg(regs64->rax);
 			return data;
 		}
 		default: {
@@ -84,7 +106,6 @@ syscall_data_t get_syscall_data(struct iovec *iov) {
 void strace_trace(pid_t pid) {
 	// TODO write strings for read and write ?
 	// TODO sigprocmask & handle signals
-	// TODO error message when invalid path and use PATH variable
 	// TODO option -c to count syscalls
 	// TODO fix double print and missing last syscall return value
 	// ptrace(PTRACE_SETOPTIONS, pid, NULL, PTRACE_O_TRACESYSGOOD);
@@ -113,9 +134,9 @@ void strace_trace(pid_t pid) {
 
 		syscall_data_t data = get_syscall_data(&iov);
 
-		if (data.syscall_id < MAX_SYSCALLS && data.syscall_info->name != NULL) {
+		if (data.syscall_id.u < MAX_SYSCALLS && data.syscall_info->name != NULL) {
 			// https://stackoverflow.com/questions/52056385/after-attaching-to-process-how-to-check-whether-the-tracee-is-in-a-syscall
-			if (data.sret == -ENOSYS) {
+			if (data.ret.s == -ENOSYS) {
 				print_syscall_pre(&data);
 			} else {
 				print_syscall_post(&data);

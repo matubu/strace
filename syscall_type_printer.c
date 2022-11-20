@@ -48,17 +48,17 @@ void print_none(reg_t reg)
 
 void print_ptr(reg_t reg)
 {
-	printf("\x1b[93m%p\x1b[0m", (void *)reg);
+	printf("\x1b[93m%p\x1b[0m", (void *)reg.u);
 }
 
 void print_ulong(reg_t reg)
 {
-	printf("\x1b[93m" pu64 "\x1b[0m", reg);
+	printf("\x1b[93m" pu64 "\x1b[0m", reg.u);
 }
 
 void print_long(reg_t reg)
 {
-	printf("\x1b[93m" pu64 "\x1b[0m", reg);
+	printf("\x1b[93m" pu64 "\x1b[0m", reg.s);
 }
 
 // void print_argv(reg_t reg)

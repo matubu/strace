@@ -13,6 +13,7 @@
 #include <elf.h>
 #include <inttypes.h>
 #include <ctype.h>
+#include <sys/mman.h>
 
 // https://blog.rchapman.org/posts/Linux_System_Call_Table_for_x86_64/
 // https://www.systutorials.com/docs/linux/man/2-syscalls/
@@ -49,8 +50,10 @@ typedef uint32_t	reg32_t;
 typedef uint64_t	reg64_t;
 typedef int32_t		sreg32_t;
 typedef int64_t		sreg64_t;
-typedef reg64_t		reg_t;
-typedef sreg64_t	sreg_t;
+typedef struct {
+	sreg64_t	s; /* signed */
+	reg64_t		u; /* unsigned */
+}	reg_t;
 
 typedef struct __attribute__((__packed__)) {
 	reg32_t ebx;
@@ -116,7 +119,6 @@ typedef struct {
 	const syscall_info_t	*syscall_info;
 	reg_t					args[6];
 	reg_t					ret;
-	sreg_t					sret;
 }	syscall_data_t;
 
 void print_reg_data(data_type_t type, reg_t reg);

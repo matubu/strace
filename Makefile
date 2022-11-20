@@ -7,10 +7,9 @@ CFLAGS = -Wall -Wextra -Werror -Ofast
 
 all: $(NAME)
 
-syscalls_32.c:
-	./gen_syscalls.sh 32 > syscalls_32.c
-syscalls_64.c:
-	./gen_syscalls.sh 64 > syscalls_64.c
+syscalls_header:
+	deno run --allow-read --allow-run gen_syscalls.js 32 > syscalls_32.c
+	deno run --allow-read --allow-run gen_syscalls.js 64 > syscalls_64.c
 
 objects/%.o: %.c
 	mkdir -p objects
@@ -24,7 +23,6 @@ clean:
 
 fclean: clean
 	rm -rf $(NAME)
-	rm -rf syscalls_32.c syscalls_64.c
 
 re: fclean all
 

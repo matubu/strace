@@ -13,6 +13,6 @@ int main(int ac, char **av) {
 	}
 	int fd = open("hello.c", O_RDONLY);
 	int fd2 = open("ergergergerg", O_RDONLY);
-	mmap(NULL, 0, 0, 0, fd, 0);
+	printf("%p\n", mmap(NULL, 0, 0, 0, fd, 0));
 	execve(av[0], NULL, NULL);
 }
