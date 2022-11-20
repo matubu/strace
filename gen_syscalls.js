@@ -30,6 +30,12 @@ console.log(`const syscall_info_t syscalls_${syscallClass}[] = {`);
 
 for (const syscall of unistdFile.matchAll(/#define __NR_(\w+)\s+(\d+)/g)) {
 	const syscallName = syscall[1];
+	const syscallNameWithoutFlavor = syscallName
+		.replace(/(64)?_?64$/, '')
+		.replace(/_?32$/, '')
+		.replace(/^_?new/, '')
+		.replace(/^old(old)?|_old$/, '')
+		.replace(/^rt_/, '');
 
 	if (syscall) {
 		const process = Deno.run({
@@ -39,14 +45,18 @@ for (const syscall of unistdFile.matchAll(/#define __NR_(\w+)\s+(\d+)/g)) {
 		});
 
 		const syscallMan = new TextDecoder().decode(await process.output());
-		await process.status();
+		if (!(await process.status()).success) {
+			continue ;
+		}
 
 		const syscallDeclaration = syscallMan.match(
-			new RegExp(`(.*[ *])(?:_?${syscallName}\\(|syscall\\(SYS_${syscallName}, )([^)]*)\\);`, 'm')
+			new RegExp(`(.*[ *])(?:(?:_|posix_)?${syscallNameWithoutFlavor}\\(|syscall\\(SYS_${syscallName}, )([^)]*)\\);`, 'm')
 		);
 
 		if (syscallDeclaration == null) {
-			console.error('\x1b[91mError\x1b[0m parsing', syscallName);
+			if (!syscallMan.includes('Unimplemented system calls.')) {
+				console.error('\x1b[91mError\x1b[0m parsing', syscallName, syscallNameWithoutFlavor);
+			}
 			continue ;
 		}
 
