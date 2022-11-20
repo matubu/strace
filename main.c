@@ -7,18 +7,39 @@ void usage() {
 	exit(1);
 }
 
-// Child process
-void setup_tracee() {
-	if (ptrace(PTRACE_TRACEME, 0, NULL, NULL)) {
-		syserr("ptrace");
-	}
+void strace_sig_resetmask() {
+	sigset_t set;
+	sigemptyset(&set);
+	sigprocmask(SIG_SETMASK, &set, NULL);
+}
 
-	kill(getpid(), SIGSTOP);
+void strace_sig_block() {
+	sigset_t set;
+	sigemptyset(&set);
+	sigaddset(&set, SIGHUP);
+	sigaddset(&set, SIGINT);
+	sigaddset(&set, SIGQUIT);
+	sigaddset(&set, SIGPIPE);
+	sigaddset(&set, SIGTERM);
+	sigprocmask(SIG_BLOCK, &set, NULL);
 }
 
 // Parent process
-void setup_process() {
-	if (ptrace())
+void setup_tracer(pid_t pid) {
+	if (ptrace(PTRACE_SEIZE, pid, NULL, NULL) == -1) {
+		syserr("ptrace");
+	}
+
+	strace_sig_resetmask();
+	int status;
+	if (waitpid(pid, &status, 0) < 0) {
+		syserr("waitpid");
+	}
+	strace_sig_block();
+
+	if (ptrace(PTRACE_SETOPTIONS, pid, NULL, PTRACE_O_TRACESYSGOOD) < 0) {
+		syserr("ptrace setoptions");
+	}
 }
 
 void print_syscall_pre(const syscall_data_t *data) {
@@ -109,20 +130,22 @@ syscall_data_t get_syscall_data(struct iovec *iov) {
 
 // Parent process
 void strace_trace(pid_t pid) {
-	// TODO write strings for read and write ?
-	// TODO sigprocmask & handle signals
-	// TODO option -c to count syscalls
-	// TODO fix double print and missing last syscall return value
-	// ptrace(PTRACE_SETOPTIONS, pid, NULL, PTRACE_O_TRACESYSGOOD);
-
 	while (1) {
+		// Continue until next syscall
+		if (ptrace(PTRACE_SYSCALL, pid, NULL, NULL) == -1) {
+			syserr("ptrace syscall");
+		}
+
 		int status;
+		strace_sig_resetmask();
 		if (waitpid(pid, &status, 0) == -1) {
 			perror("waitpid");
 			exit(1);
 		}
+		strace_sig_block();
 
 		if (WIFEXITED(status)) {
+			printf(" = \x1b[90m?\x1b[0m\n");
 			printf("+++ exited with %d +++\n", WEXITSTATUS(status));
 			break;
 		}
@@ -149,14 +172,9 @@ void strace_trace(pid_t pid) {
 			fflush(stdout);
 		}
 		else if (data.ret.s == -ENOSYS) {
-			printf(pu64, data.syscall_id.u);
+			printf("syscall(" pu64 ")", data.syscall_id.u);
 		} else {
 			printf(" => " pi64 "\n", data.ret.s);
-		}
-
-		// Continue until next syscall
-		if (ptrace(PTRACE_SYSCALL, pid, NULL, NULL) == -1) {
-			syserr("ptrace syscall");
 		}
 	}
 }
@@ -178,12 +196,17 @@ int main(int ac, char **av) {
 	}
 
 	if (pid == 0) {
-		setup_tracee();
+		//`Child process
+		// if (ptrace(PTRACE_TRACEME, 0, NULL, NULL) < 0) {
+		// 	syserr("ptrace traceme");
+		// }
+		kill(getpid(), SIGSTOP);
 		execvp(path, av + 1);
 		syserr("execvp");
 	}
 	else {
-		setup_tracer();
+		// Parent process
+		setup_tracer(pid);
 		strace_trace(pid);
 	}
 }
