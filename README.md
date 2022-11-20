@@ -6,3 +6,4 @@
  - Handle signals
  - Handle -c flag (count the syscall and their time to make a summary)
  - Fix bug double return value of first syscall and missing last syscall return
+ - Missing syscall ex: exit_group

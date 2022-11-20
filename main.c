@@ -143,6 +143,11 @@ void strace_trace(pid_t pid) {
 			}
 			fflush(stdout);
 		}
+		else if (data.ret.s == -ENOSYS) {
+			printf(pu64, data.syscall_id.u);
+		} else {
+			printf(" => " pi64 "\n", data.ret.s);
+		}
 
 		// Continue until next syscall
 		if (ptrace(PTRACE_SYSCALL, pid, NULL, NULL) == -1) {

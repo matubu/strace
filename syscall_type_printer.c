@@ -48,7 +48,11 @@ void print_none(reg_t reg)
 
 void print_ptr(reg_t reg)
 {
-	printf("\x1b[93m%p\x1b[0m", (void *)reg.u);
+	if (reg.u == 0) {
+		printf("\x1b[93mNULL\x1b[0m");
+	} else {
+		printf("\x1b[93m%p\x1b[0m", (void *)reg.u);
+	}
 }
 
 void print_ulong(reg_t reg)

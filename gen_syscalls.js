@@ -42,10 +42,11 @@ for (const syscall of unistdFile.matchAll(/#define __NR_(\w+)\s+(\d+)/g)) {
 		await process.status();
 
 		const syscallDeclaration = syscallMan.match(
-			new RegExp(`(.*[ *])${syscallName}\\(([^)]*)\\);`, 'm')
+			new RegExp(`(.*[ *])(?:_?${syscallName}\\(|syscall\\(SYS_${syscallName}, )([^)]*)\\);`, 'm')
 		);
 
 		if (syscallDeclaration == null) {
+			console.error('\x1b[91mError\x1b[0m parsing', syscallName);
 			continue ;
 		}
 
