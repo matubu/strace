@@ -16,6 +16,11 @@ void setup_tracee() {
 	kill(getpid(), SIGSTOP);
 }
 
+// Parent process
+void setup_process() {
+	if (ptrace())
+}
+
 void print_syscall_pre(const syscall_data_t *data) {
 	printf("\x1b[94m%s\x1b[0m(", data->syscall_info->name);
 	for (int i = 0; i < 6; i++) {
@@ -178,6 +183,7 @@ int main(int ac, char **av) {
 		syserr("execvp");
 	}
 	else {
+		setup_tracer();
 		strace_trace(pid);
 	}
 }
