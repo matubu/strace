@@ -26,10 +26,12 @@ const missingMans = {
 	'ugetrlimit': `int ugetrlimit(int resource, struct rlimit *rlim);`,
 	'signalfd4': `int signalfd4(int fd, const sigset_t *mask, int flags);`,
 	'eventfd2': `int eventfd2(unsigned int initval, int flags);`,
-	'io_pgetevents': `
-		int syscall(SYS_io_getevents, aio_context_t ctx_id,
-					long min_nr, long nr, struct io_event *events,
-					struct timespec *timeout);`,
+	'io_pgetevents_time64': `long io_pgetevents_time64(aio_context_t ctx_id,
+				long min_nr,
+				long nr,
+				struct io_event __user *events,
+				struct timespec __user *timeout,
+				const struct __aio_sigset *sig);`,
 	'rseq': `int rseq(struct rseq *rseq, uint32_t rseq_len, int flags, uint32_t sig);`,
 	'set_mempolicy_home_node': `long set_mempolicy_home_node(unsigned long start, unsigned long len,
 				 unsigned long home_node,
@@ -43,6 +45,35 @@ const missingMans = {
 	'landlock_add_rule': `int syscall(SYS_landlock_add_rule, int ruleset_fd,
 				enum landlock_rule_type rule_type,
 				const void *rule_attr, uint32_t flags);`,
+	'landlock_create_ruleset': `int syscall(SYS_landlock_create_ruleset,
+				const struct landlock_ruleset_attr *attr,
+				size_t size , uint32_t flags);`,
+	'quotactl_fd': `int quotactl_fd(unsigned int fd, unsigned int cmd, qid_t id, void *addr);`,
+	'fspick': `int fspick(int dirfd, const char *pathname, unsigned int flags);`,
+	'fsmount': `int fsmount(int fd, unsigned int flags, unsigned int mount_attrs);`,
+	'fsopen': `int fsopen(const char *fsname, unsigned int flags);`,
+	'fsconfig': `int fsconfig(int *fd, unsigned int cmd, const char *key,
+					const void __user *value, int aux);`,
+	'move_mount': `int move_mount(int from_dirfd, const char *from_pathname,
+						int to_dirfd, const char *to_pathname,
+						unsigned int flags);`,
+	'open_tree': `int open_tree(int dirfd, const char *pathname, unsigned int flags);`,
+	'io_uring_register': `int io_uring_register(unsigned int fd, unsigned int opcode,
+				void *arg, unsigned int nr_args);`,
+	'io_uring_enter': `int io_uring_enter(unsigned int fd, unsigned int to_submit,
+					unsigned int min_complete, unsigned int flags,
+					sigset_t *sig);`,
+	'io_uring_setup': `int io_uring_setup(u32 entries, struct io_uring_params *p);`,
+	'sched_rr_get_interval_time64': `int sched_rr_get_interval_time64(pid_t, timespec64*);`,
+	'clock_nanosleep_time64': `int clock_nanosleep_time64(clockid_t clockid, int flags,
+						const struct timespec *request,
+						struct timespec *remain)`,
+	'utimensat_time64': `int utimensat_time64(int dirfd, const char *pathname,
+				const struct timespec times[2], int flags);`,
+	'pselect6_time64': `int pselect6_time64(int nfds, fd_set *readfds, fd_set *writefds,
+			fd_set *exceptfds, const struct timespec *timeout,
+			const sigset_t *sigmask);`,
+	'ppoll_time64': `int ppoll_time64(struct pollfd *fds, nfds_t nfds, int timeout)`,
 }
 
 const syscallClass = Deno.args[0];
@@ -85,9 +116,9 @@ for (const syscall of unistdFile.matchAll(/#define __NR_(\w+)\s+(\d+)/g)) {
 		const syscallDeclaration = syscallMan.match(syscallDeclarationRegex);
 
 		if (syscallDeclaration == null) {
-			if (!syscallMan.includes('Unimplemented system calls.')) {
-				console.error('\x1b[91mError\x1b[0m parsing', syscallName, syscallMan);
-			}
+			// if (!syscallMan.includes('Unimplemented system calls.')) {
+			// 	console.error('\x1b[91mError\x1b[0m parsing', syscallName, syscallMan);
+			// }
 			continue ;
 		}
 
