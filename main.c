@@ -205,7 +205,6 @@ void strace_trace(pid_t pid) {
 		strace_sig_block();
 
 		if (WIFEXITED(status)) {
-			// TODO fix: might be a better solution
 			printf(" = \x1b[90m?\x1b[0m\n");
 			printf("+++ exited with %d +++\n", WEXITSTATUS(status));
 			break;

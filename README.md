@@ -2,13 +2,9 @@
 🐛 A debugging tool to trace syscalls and signal of a program
 
 ## TODO
- - Parsing arguments
- - Handle signals (sigprocmask)
  - Handle -c flag (count the syscall and their time to make a summary)
  - Fix clanky fix for last syscall return value missing
- - Missing syscall ex: rseq
  - ptrace regs wrong value ex: mmap -1
- - why sigprocmask
  - strace cat Ctrl-C
 
 ## Resources
