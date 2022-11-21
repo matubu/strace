@@ -128,6 +128,35 @@ syscall_data_t get_syscall_data(struct iovec *iov) {
 	}
 }
 
+void strace_handle_syscall(pid_t pid) {
+	// Get the registers values
+	regs_t regs;
+	struct iovec iov = {
+		.iov_base = &regs,
+		.iov_len = sizeof(regs),
+	};
+	if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &iov) == -1) {
+		syserr("ptrace getregs");
+	}
+
+	syscall_data_t data = get_syscall_data(&iov);
+
+	if (data.syscall_id.u < MAX_SYSCALLS && data.syscall_info->name != NULL) {
+		// https://stackoverflow.com/questions/52056385/after-attaching-to-process-how-to-check-whether-the-tracee-is-in-a-syscall
+		if (data.ret.s == -ENOSYS) {
+			print_syscall_pre(&data);
+		} else {
+			print_syscall_post(&data);
+		}
+		fflush(stdout);
+	}
+	else if (data.ret.s == -ENOSYS) {
+		printf("syscall(" pu64 ")", data.syscall_id.u);
+	} else {
+		printf(" => " pi64 "\n", data.ret.s);
+	}
+}
+
 // Parent process
 void strace_trace(pid_t pid) {
 	while (1) {
@@ -144,37 +173,27 @@ void strace_trace(pid_t pid) {
 		}
 		strace_sig_block();
 
+		// printf("testtetsetetsetset\n");
+
 		if (WIFEXITED(status)) {
+			// TODO fix: might be a better solution
 			printf(" = \x1b[90m?\x1b[0m\n");
 			printf("+++ exited with %d +++\n", WEXITSTATUS(status));
 			break;
 		}
 
-		// Get the registers values
-		regs_t regs;
-		struct iovec iov = {
-			.iov_base = &regs,
-			.iov_len = sizeof(regs),
-		};
-		if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &iov) == -1) {
-			syserr("ptrace getregs");
-		}
+		// if (WIFSIGNALED(status)) {
+		// 	printf(" = \x1b[90m?\x1b[0m\n");
+		// 	printf("+++ killed by %s +++\n", strsignal(WTERMSIG(status)));
+		// 	break;
+		// }
 
-		syscall_data_t data = get_syscall_data(&iov);
+		// if (WSTOPSIG(status) == SIGTRAP) {
+		// 	printf("stopped\n");
+		// }
 
-		if (data.syscall_id.u < MAX_SYSCALLS && data.syscall_info->name != NULL) {
-			// https://stackoverflow.com/questions/52056385/after-attaching-to-process-how-to-check-whether-the-tracee-is-in-a-syscall
-			if (data.ret.s == -ENOSYS) {
-				print_syscall_pre(&data);
-			} else {
-				print_syscall_post(&data);
-			}
-			fflush(stdout);
-		}
-		else if (data.ret.s == -ENOSYS) {
-			printf("syscall(" pu64 ")", data.syscall_id.u);
-		} else {
-			printf(" => " pi64 "\n", data.ret.s);
+		if (WIFSTOPPED(status) && WSTOPSIG(status) & 0x80) {
+			strace_handle_syscall(pid);
 		}
 	}
 }
@@ -197,10 +216,7 @@ int main(int ac, char **av) {
 
 	if (pid == 0) {
 		//`Child process
-		// if (ptrace(PTRACE_TRACEME, 0, NULL, NULL) < 0) {
-		// 	syserr("ptrace traceme");
-		// }
-		kill(getpid(), SIGSTOP);
+		raise(SIGSTOP);
 		execvp(path, av + 1);
 		syserr("execvp");
 	}
