@@ -5,10 +5,11 @@
  - Parsing arguments
  - Handle signals (sigprocmask)
  - Handle -c flag (count the syscall and their time to make a summary)
- - Fix bug missing last syscall return && test_1 double return for wait
+ - Fix clanky fix for last syscall return value missing
  - Missing syscall ex: rseq
  - ptrace regs wrong value ex: mmap -1
  - why sigprocmask
+ - strace cat Ctrl-C
 
 ## Resources
  - https://abda.nl/posts/understanding-ptrace/

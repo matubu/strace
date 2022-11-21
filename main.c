@@ -1,6 +1,7 @@
 #include "errno_map.h"
 #include "syscall.h"
 #include "utils.h"
+#include "signame.h"
 
 void usage() {
 	printf("strace: must have PROG [ARGS]\n");
@@ -157,6 +158,36 @@ void strace_handle_syscall(pid_t pid) {
 	}
 }
 
+void strace_handle_sigstopped(pid_t pid) {
+	siginfo_t		siginfo;
+
+	ptrace(PTRACE_GETSIGINFO, pid, NULL, &siginfo);
+	printf("--- \x1b[91m%s\x1b[0m {\
+ si_signo=\x1b[91m%s\x1b[0m,\
+ si_code=\x1b[93m%d\x1b[0m,\
+ si_pid=\x1b[93m%d\x1b[0m,\
+ si_uid=\x1b[93m%d\x1b[0m,\
+ si_status=\x1b[93m%d\x1b[0m,\
+ si_utime=\x1b[93m%lu\x1b[0m,\
+ si_stime=\x1b[93m%ld\x1b[0m,\
+ si_addr=\x1b[93m%p\x1b[0m\
+} ---\n",
+		get_signame(siginfo.si_signo),
+		get_signame(siginfo.si_signo),
+		siginfo.si_code,
+		siginfo.si_pid,
+		siginfo.si_uid,
+		siginfo.si_status,
+		siginfo.si_utime,
+		siginfo.si_stime,
+		siginfo.si_addr
+	);
+	if (siginfo.si_signo == SIGSEGV) {
+		printf("+++ killed by SIGSEGV (core dumped) +++\n");
+		raise(SIGSEGV);
+	}
+}
+
 // Parent process
 void strace_trace(pid_t pid) {
 	while (1) {
@@ -173,8 +204,6 @@ void strace_trace(pid_t pid) {
 		}
 		strace_sig_block();
 
-		// printf("testtetsetetsetset\n");
-
 		if (WIFEXITED(status)) {
 			// TODO fix: might be a better solution
 			printf(" = \x1b[90m?\x1b[0m\n");
@@ -182,18 +211,16 @@ void strace_trace(pid_t pid) {
 			break;
 		}
 
-		// if (WIFSIGNALED(status)) {
-		// 	printf(" = \x1b[90m?\x1b[0m\n");
-		// 	printf("+++ killed by %s +++\n", strsignal(WTERMSIG(status)));
-		// 	break;
-		// }
-
-		// if (WSTOPSIG(status) == SIGTRAP) {
-		// 	printf("stopped\n");
-		// }
+		if (WIFSIGNALED(status)) {
+			printf(" = \x1b[90m?\x1b[0m\n");
+			printf("+++ killed by %s +++\n", get_signame(WTERMSIG(status)));
+			break;
+		}
 
 		if (WIFSTOPPED(status) && WSTOPSIG(status) & 0x80) {
 			strace_handle_syscall(pid);
+		} else {
+			strace_handle_sigstopped(pid);
 		}
 	}
 }

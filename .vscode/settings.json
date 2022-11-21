@@ -7,6 +7,10 @@
 		"unistd_32.h": "c",
 		"user.h": "c",
 		"elf.h": "c",
-		"errno.h": "c"
+		"errno.h": "c",
+		"signal.h": "c",
+		"signum-generic.h": "c",
+		"sig_atomic_t.h": "c",
+		"features.h": "c"
 	}
 }
