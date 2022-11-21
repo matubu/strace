@@ -65,7 +65,23 @@ void print_syscall_error(const syscall_data_t *data) {
 		return ;
 	}
 	if (data->ret.s < 0) {
-		printf(" \x1b[90m%s\x1b[0m (\x1b[91m%s\x1b[0m)", errno_map[-data->ret.s], strerror(-data->ret.s));
+		switch (-data->ret.s) {
+			case ERESTARTSYS:
+				printf("= ? \x1b[90mERESTARTSYS\x1b[0m (\x1b[91mTo be restarted if SA_RESTART is set\x1b[0m)");
+				break;
+			case ERESTARTNOINTR:
+				printf("= ? \x1b[90mERESTARTNOINTR\x1b[0m (\x1b[91mTo be restarted\x1b[0m)");
+				break;
+			case ERESTARTNOHAND:
+				printf("= ? \x1b[90mERESTARTNOHAND\x1b[0m (\x1b[91mTo be restarted if no handler\x1b[0m)");
+				break;
+			case ERESTART_RESTARTBLOCK:
+				printf("= ? \x1b[90mERESTART_RESTARTBLOCK\x1b[0m (\x1b[91mInterrupted by signal\x1b[0m)");
+				break;
+			default:
+				printf(" \x1b[90m%s\x1b[0m (\x1b[91m%s\x1b[0m)", errno_map[-data->ret.s], strerror(-data->ret.s));
+				break ;
+		}
 	}
 }
 
@@ -216,10 +232,12 @@ void strace_trace(pid_t pid) {
 			break;
 		}
 
-		if (WIFSTOPPED(status) && WSTOPSIG(status) & 0x80) {
-			strace_handle_syscall(pid);
-		} else {
-			strace_handle_sigstopped(pid);
+		if (WIFSTOPPED(status)) {
+			if (WSTOPSIG(status) & 0x80) {
+				strace_handle_syscall(pid);
+			} else {
+				strace_handle_sigstopped(pid);
+			}
 		}
 	}
 }
