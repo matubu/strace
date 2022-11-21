@@ -106,26 +106,24 @@ for (const syscall of unistdFile.matchAll(/#define __NR_(\w+)\s+(\d+)/g)) {
 		.replace(/^old(old)?|_old$/, '')
 		.replace(/^rt_/, '');
 
-	if (syscall) {
-		const syscallMan = missingMans[syscallName]
-						|| await run([ "/usr/bin/man", "2", syscallName ])
-						|| await run([ "/usr/bin/man", "2", syscallNameWithoutFlavor ]);
+	const syscallMan = missingMans[syscallName]
+					|| await run([ "/usr/bin/man", "2", syscallName ])
+					|| await run([ "/usr/bin/man", "2", syscallNameWithoutFlavor ]);
 
-		const syscallDeclarationRegex = 
-			new RegExp(`(.*[ *])(?:(?:_|posix_)?${syscallNameWithoutFlavor}\\(|syscall\\(SYS_${syscallName},)([^)]*)\\);`, 'm')
-		const syscallDeclaration = syscallMan.match(syscallDeclarationRegex);
+	const syscallDeclarationRegex = 
+		new RegExp(`(.*[ *])(?:(?:_|posix_)?${syscallNameWithoutFlavor}\\(|syscall\\(SYS_${syscallName},)([^)]*)\\);`, 'm')
+	const syscallDeclaration = syscallMan.match(syscallDeclarationRegex);
 
-		if (syscallDeclaration == null) {
-			// if (!syscallMan.includes('Unimplemented system calls.')) {
-			// 	console.error('\x1b[91mError\x1b[0m parsing', syscallName, syscallMan);
-			// }
-			continue ;
-		}
-
-		const returnType = getType(syscallDeclaration[1]);
-		const args = syscallDeclaration[2].split(',').map(getType);
-		console.log(`\t[__NR_${syscallName}] = {"${syscallName}", {${args.join(', ')}}, ${returnType}},`);
+	if (syscallDeclaration == null) {
+		console.error(`${syscallName} -> \x1b[91mError\x1b[0m${syscallMan ? '' : ' \x1b[90m(no man found)\x1b[0m'}`)
+		continue ;
 	}
+
+	const returnType = getType(syscallDeclaration[1]);
+	const args = syscallDeclaration[2].split(',').map(getType);
+	console.log(`\t[__NR_${syscallName}] = {"${syscallName}", {${args.join(', ')}}, ${returnType}},`);
+
+	console.error(`${syscallName} -> \x1b[92mDone\x1b[0m`);
 }
 
 console.log("};")

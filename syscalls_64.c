@@ -328,7 +328,6 @@ const syscall_info_t syscalls_64[] = {
 	[__NR_pkey_alloc] = {"pkey_alloc", {Long, Long}, Long},
 	[__NR_pkey_free] = {"pkey_free", {Long}, Long},
 	[__NR_statx] = {"statx", {Long, Long, Long, Long, Long}, Long},
-	[__NR_io_pgetevents] = {"io_pgetevents", {Long, Long, Long, Ptr, Ptr, Ptr}, Long},
 	[__NR_rseq] = {"rseq", {Ptr, Long, Long, Long}, Long},
 	[__NR_pidfd_send_signal] = {"pidfd_send_signal", {Long, Long, Ptr, Long}, Long},
 	[__NR_io_uring_setup] = {"io_uring_setup", {Long, Ptr}, Long},

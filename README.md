@@ -6,6 +6,7 @@
  - Fix clanky fix for last syscall return value missing
  - ptrace regs wrong value ex: mmap -1
  - strace cat Ctrl-C
+ - ERESTART_RESTARTBLOCK
 
 ## Resources
  - https://abda.nl/posts/understanding-ptrace/
